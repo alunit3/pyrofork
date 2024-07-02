@@ -66,7 +66,8 @@ class SendVideo:
             "types.ForceReply"
         ] = None,
         progress: Callable = None,
-        progress_args: tuple = ()
+        progress_args: tuple = (),
+        max_upload_speed: float = None
     ) -> Optional["types.Message"]:
         """Send video files.
 
@@ -236,7 +237,7 @@ class SendVideo:
             if isinstance(video, str):
                 if os.path.isfile(video):
                     thumb = await self.save_file(thumb)
-                    file = await self.save_file(video, progress=progress, progress_args=progress_args)
+                    file = await self.save_file(video, progress=progress, progress_args=progress_args, max_upload_speed=max_upload_speed)
                     media = raw.types.InputMediaUploadedDocument(
                         mime_type=self.guess_mime_type(video) or "video/mp4",
                         file=file,
@@ -264,7 +265,7 @@ class SendVideo:
                     media.spoiler = has_spoiler
             else:
                 thumb = await self.save_file(thumb)
-                file = await self.save_file(video, progress=progress, progress_args=progress_args)
+                file = await self.save_file(video, progress=progress, progress_args=progress_args, max_upload_speed=max_upload_speed)
                 media = raw.types.InputMediaUploadedDocument(
                     mime_type=self.guess_mime_type(file_name or video.name) or "video/mp4",
                     file=file,
@@ -307,7 +308,7 @@ class SendVideo:
                     else:
                         r = await self.invoke(rpc)
                 except FilePartMissing as e:
-                    await self.save_file(video, file_id=file.id, file_part=e.value)
+                    await self.save_file(video, file_id=file.id, file_part=e.value, max_upload_speed=max_upload_speed)
                 else:
                     for i in r.updates:
                         if isinstance(i, (raw.types.UpdateNewMessage,

@@ -58,7 +58,8 @@ class SendMediaGroup:
         schedule_date: datetime = None,
         protect_content: bool = None,
         message_effect_id: int = None,
-        invert_media: bool = None
+        invert_media: bool = None,
+        max_upload_speed: float = None
     ) -> List["types.Message"]:
         """Send a group of photos or videos as an album.
 
@@ -161,7 +162,7 @@ class SendMediaGroup:
                             raw.functions.messages.UploadMedia(
                                 peer=await self.resolve_peer(chat_id),
                                 media=raw.types.InputMediaUploadedPhoto(
-                                    file=await self.save_file(i.media),
+                                    file=await self.save_file(i.media, max_upload_speed=max_upload_speed),
                                     spoiler=i.has_spoiler
                                 )
                             )
@@ -201,7 +202,7 @@ class SendMediaGroup:
                         raw.functions.messages.UploadMedia(
                             peer=await self.resolve_peer(chat_id),
                             media=raw.types.InputMediaUploadedPhoto(
-                                file=await self.save_file(i.media),
+                                file=await self.save_file(i.media, max_upload_speed=max_upload_speed),
                                 spoiler=i.has_spoiler
                             )
                         )
@@ -245,7 +246,7 @@ class SendMediaGroup:
                             raw.functions.messages.UploadMedia(
                                 peer=await self.resolve_peer(chat_id),
                                 media=raw.types.InputMediaUploadedDocument(
-                                    file=await self.save_file(i.media),
+                                    file=await self.save_file(i.media, max_upload_speed=max_upload_speed),
                                     thumb=await self.save_file(i.thumb),
                                     spoiler=i.has_spoiler,
                                     mime_type=self.guess_mime_type(i.media) or "video/mp4",
@@ -289,7 +290,7 @@ class SendMediaGroup:
                         raw.functions.messages.UploadMedia(
                             peer=await self.resolve_peer(chat_id),
                             media=raw.types.InputMediaUploadedDocument(
-                                file=await self.save_file(i.media),
+                                file=await self.save_file(i.media, max_upload_speed=max_upload_speed),
                                 thumb=await self.save_file(i.thumb),
                                 spoiler=i.has_spoiler,
                                 mime_type=self.guess_mime_type(getattr(i.media, "name", "video.mp4")) or "video/mp4",
@@ -322,7 +323,7 @@ class SendMediaGroup:
                                 peer=await self.resolve_peer(chat_id),
                                 media=raw.types.InputMediaUploadedDocument(
                                     mime_type=self.guess_mime_type(i.media) or "audio/mpeg",
-                                    file=await self.save_file(i.media),
+                                    file=await self.save_file(i.media, max_upload_speed=max_upload_speed),
                                     thumb=await self.save_file(i.thumb),
                                     attributes=[
                                         raw.types.DocumentAttributeAudio(
@@ -368,7 +369,7 @@ class SendMediaGroup:
                             peer=await self.resolve_peer(chat_id),
                             media=raw.types.InputMediaUploadedDocument(
                                 mime_type=self.guess_mime_type(getattr(i.media, "name", "audio.mp3")) or "audio/mpeg",
-                                file=await self.save_file(i.media),
+                                file=await self.save_file(i.media, max_upload_speed=max_upload_speed),
                                 thumb=await self.save_file(i.thumb),
                                 attributes=[
                                     raw.types.DocumentAttributeAudio(
@@ -397,7 +398,7 @@ class SendMediaGroup:
                                 peer=await self.resolve_peer(chat_id),
                                 media=raw.types.InputMediaUploadedDocument(
                                     mime_type=self.guess_mime_type(i.media) or "application/zip",
-                                    file=await self.save_file(i.media),
+                                    file=await self.save_file(i.media, max_upload_speed=max_upload_speed),
                                     thumb=await self.save_file(i.thumb),
                                     attributes=[
                                         raw.types.DocumentAttributeFilename(file_name=os.path.basename(i.media))
@@ -440,7 +441,7 @@ class SendMediaGroup:
                                 mime_type=self.guess_mime_type(
                                     getattr(i.media, "name", "file.zip")
                                 ) or "application/zip",
-                                file=await self.save_file(i.media),
+                                file=await self.save_file(i.media, max_upload_speed=max_upload_speed),
                                 thumb=await self.save_file(i.thumb),
                                 attributes=[
                                     raw.types.DocumentAttributeFilename(file_name=getattr(i.media, "name", "file.zip"))

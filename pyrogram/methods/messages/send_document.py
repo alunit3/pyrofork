@@ -60,7 +60,8 @@ class SendDocument:
             "types.ForceReply"
         ] = None,
         progress: Callable = None,
-        progress_args: tuple = ()
+        progress_args: tuple = (),
+        max_upload_speed: float = None
     ) -> Optional["types.Message"]:
         """Send generic files.
 
@@ -208,7 +209,7 @@ class SendDocument:
             if isinstance(document, str):
                 if os.path.isfile(document):
                     thumb = await self.save_file(thumb)
-                    file = await self.save_file(document, progress=progress, progress_args=progress_args)
+                    file = await self.save_file(document, progress=progress, progress_args=progress_args, max_upload_speed=max_upload_speed)
                     media = raw.types.InputMediaUploadedDocument(
                         mime_type=self.guess_mime_type(document) or "application/zip",
                         file=file,
@@ -226,7 +227,7 @@ class SendDocument:
                     media = utils.get_input_media_from_file_id(document, FileType.DOCUMENT)
             else:
                 thumb = await self.save_file(thumb)
-                file = await self.save_file(document, progress=progress, progress_args=progress_args)
+                file = await self.save_file(document, progress=progress, progress_args=progress_args, max_upload_speed=max_upload_speed)
                 media = raw.types.InputMediaUploadedDocument(
                     mime_type=self.guess_mime_type(file_name or document.name) or "application/zip",
                     file=file,
@@ -260,7 +261,7 @@ class SendDocument:
                     else:
                         r = await self.invoke(rpc)
                 except FilePartMissing as e:
-                    await self.save_file(document, file_id=file.id, file_part=e.value)
+                    await self.save_file(document, file_id=file.id, file_part=e.value, max_upload_speed=max_upload_speed)
                 else:
                     for i in r.updates:
                         if isinstance(i, (raw.types.UpdateNewMessage,

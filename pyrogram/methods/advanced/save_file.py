@@ -24,6 +24,7 @@ import io
 import logging
 import math
 import os
+import time
 from hashlib import md5
 from pathlib import PurePath
 from typing import Union, BinaryIO, Callable
@@ -43,7 +44,8 @@ class SaveFile:
         file_id: int = None,
         file_part: int = 0,
         progress: Callable = None,
-        progress_args: tuple = ()
+        progress_args: tuple = (),
+        max_upload_speed: float = None
     ):
         """Upload a file onto Telegram servers, without actually sending the message to anyone.
         Useful whenever an InputFile type is required.
@@ -95,6 +97,22 @@ class SaveFile:
         Raises:
             RPCError: In case of a Telegram RPC error.
         """
+
+        async def rate_limited_read(file: BinaryIO, chunk_size: int):
+           if max_upload_speed is None:
+               return file.read(chunk_size)
+           
+           start_time = time.time()
+           chunk = file.read(chunk_size)
+           elapsed_time = time.time() - start_time
+           
+           if chunk:
+               target_time = len(chunk) / max_upload_speed
+               if elapsed_time < target_time:
+                   await asyncio.sleep(target_time - elapsed_time)
+           
+           return chunk
+           
         async with self.save_file_semaphore:
             if path is None:
                 return None
@@ -153,7 +171,7 @@ class SaveFile:
                 fp.seek(part_size * file_part)
 
                 while True:
-                    chunk = fp.read(part_size)
+                    chunk = await rate_limited_read(fp, part_size)
 
                     if not chunk:
                         if not is_big and not is_missing_part:
@@ -206,7 +224,6 @@ class SaveFile:
                         id=file_id,
                         parts=file_total_parts,
                         name=file_name,
-
                     )
                 else:
                     return raw.types.InputFile(
