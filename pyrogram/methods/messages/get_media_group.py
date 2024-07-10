@@ -58,18 +58,49 @@ class GetMediaGroup:
         if message_id <= 0:
             raise ValueError("Passed message_id is negative or equal to zero.")
 
-        # Get messages with id from `id - 9` to `id + 10` to get all possible media group messages.
-        messages = await self.get_messages(
-            chat_id=chat_id,
-            message_ids=[msg_id for msg_id in range(message_id - 9, message_id + 10)],
-            replies=0
-        )
+        # First, get the target message
+        target_message = await self.get_messages(chat_id, message_ids=message_id)
 
-        # There can be maximum 10 items in a media group.
-        # If/else condition to fix the problem of getting correct `media_group_id` when `message_id` is less than 10.
-        media_group_id = messages[9].media_group_id if len(messages) == 19 else messages[message_id - 1].media_group_id
+        if not target_message:
+            raise ValueError(f"Message with ID {message_id} not found")
 
-        if media_group_id is None:
+        if not target_message.media_group_id:
             raise ValueError("The message doesn't belong to a media group")
 
-        return types.List(msg for msg in messages if msg.media_group_id == media_group_id)
+        media_group_id = target_message.media_group_id
+
+        # Function to get messages in chunks
+        async def get_message_chunk(start_id, end_id):
+            return await self.get_messages(
+                chat_id=chat_id,
+                message_ids=range(start_id, end_id + 1),
+                replies=0
+            )
+
+        # Search backwards
+        media_group = []
+        current_id = message_id
+        while True:
+            chunk = await get_message_chunk(max(1, current_id - 9), current_id)
+            group_messages = [msg for msg in chunk if msg.media_group_id == media_group_id]
+            if not group_messages or group_messages[0].id != current_id - len(group_messages) + 1:
+                break
+            media_group = group_messages + media_group
+            current_id = group_messages[0].id - 1
+            if current_id <= 0:
+                break
+
+        # Search forwards
+        current_id = message_id + 1
+        while True:
+            chunk = await get_message_chunk(current_id, current_id + 9)
+            group_messages = [msg for msg in chunk if msg.media_group_id == media_group_id]
+            if not group_messages:
+                break
+            media_group.extend(group_messages)
+            current_id = group_messages[-1].id + 1
+
+        if not media_group:
+            raise ValueError("Failed to retrieve the media group")
+
+        return types.List(sorted(media_group, key=lambda x: x.id))

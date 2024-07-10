@@ -20,12 +20,13 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with Pyrofork.  If not, see <http://www.gnu.org/licenses/>.
 
+import asyncio
 from datetime import datetime
 from typing import Union, List
 
 import pyrogram
 from pyrogram import types, utils, raw
-
+from pyrogram.errors import FloodWait
 
 class CopyMediaGroup:
     async def copy_media_group(
@@ -39,6 +40,8 @@ class CopyMediaGroup:
         reply_to_message_id: int = None,
         schedule_date: datetime = None,
         protect_content: bool = None,
+        max_retries: int = 3,
+        retry_delay: int = 5
     ) -> List["types.Message"]:
         """Copy a media group by providing one of the message ids.
 
@@ -86,6 +89,12 @@ class CopyMediaGroup:
             protect_content (``bool``, *optional*):
                 Protects the contents of the sent message from forwarding and saving
 
+            max_retries (``int``, *optional*):
+                Maximum number of retries in case of FloodWait error. Defaults to 3.
+
+            retry_delay (``int``, *optional*):
+                Delay in seconds between retries. Defaults to 5.
+
         Returns:
             List of :obj:`~pyrogram.types.Message`: On success, a list of copied messages is returned.
 
@@ -102,11 +111,13 @@ class CopyMediaGroup:
         """
 
         media_group = await self.get_media_group(from_chat_id, message_id)
+        print(f"Number of messages in the original media group: {len(media_group)}")
         multi_media = []
 
         reply_to = None
         if reply_to_message_id or message_thread_id:
-            reply_to = types.InputReplyToMessage(reply_to_message_id=reply_to_message_id, message_thread_id=message_thread_id)
+            reply_to = types.InputReplyToMessage(reply_to_message_id=reply_to_message_id,
+                                                 message_thread_id=message_thread_id)
 
         for i, message in enumerate(media_group):
             if message.photo:
@@ -132,29 +143,39 @@ class CopyMediaGroup:
                             captions) is str else "")
                 )
             )
+        print(f"Number of media in the group: {len(multi_media)}")
+        for attempt in range(max_retries):
+            try:
+                r = await self.invoke(
+                    raw.functions.messages.SendMultiMedia(
+                        peer=await self.resolve_peer(chat_id),
+                        multi_media=multi_media,
+                        silent=disable_notification or None,
+                        reply_to=reply_to,
+                        noforwards=protect_content,
+                        schedule_date=utils.datetime_to_timestamp(schedule_date)
+                    ),
+                    sleep_threshold=60
+                )
 
-        r = await self.invoke(
-            raw.functions.messages.SendMultiMedia(
-                peer=await self.resolve_peer(chat_id),
-                multi_media=multi_media,
-                silent=disable_notification or None,
-                reply_to=reply_to,
-                noforwards=protect_content,
-                schedule_date=utils.datetime_to_timestamp(schedule_date)              
-            ),
-            sleep_threshold=60
-        )
-
-        return await utils.parse_messages(
-            self,
-            raw.types.messages.Messages(
-                messages=[m.message for m in filter(
-                    lambda u: isinstance(u, (raw.types.UpdateNewMessage,
-                                             raw.types.UpdateNewChannelMessage,
-                                             raw.types.UpdateNewScheduledMessage)),
-                    r.updates
-                )],
-                users=r.users,
-                chats=r.chats
-            )
-        )
+                return await utils.parse_messages(
+                    self,
+                    raw.types.messages.Messages(
+                        messages=[m.message for m in filter(
+                            lambda u: isinstance(u, (raw.types.UpdateNewMessage,
+                                                     raw.types.UpdateNewChannelMessage,
+                                                     raw.types.UpdateNewScheduledMessage)),
+                            r.updates
+                        )],
+                        users=r.users,
+                        chats=r.chats
+                    )
+                )
+            except FloodWait as e:
+                if attempt == max_retries - 1:
+                    raise
+                await asyncio.sleep(e.value + retry_delay)
+            except Exception as e:
+                if attempt == max_retries - 1:
+                    raise
+                await asyncio.sleep(retry_delay)
