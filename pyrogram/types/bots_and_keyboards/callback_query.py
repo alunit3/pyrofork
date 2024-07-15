@@ -107,11 +107,10 @@ class CallbackQuery(Object, Update):
                 client,
                 callback_query.message,
                 users,
-                chats,
+                {},
                 is_scheduled=False,
                 replies=0,
-                business_connection_id=callback_query.connection_id,
-                raw_reply_to_message=getattr(callback_query, "reply_to_message", None)
+                business_connection_id=callback_query.connection_id
             )
         # Try to decode callback query data into string. If that fails, fallback to bytes instead of decoding by
         # ignoring/replacing errors, this way, button clicks will still work.
@@ -217,7 +216,7 @@ class CallbackQuery(Object, Update):
                 parse_mode=parse_mode,
                 disable_web_page_preview=disable_web_page_preview,
                 reply_markup=reply_markup,
-                business_connection_id=self.message.business_connection_id
+                business_connection_id=getattr(self.message, "business_connection_id", None)
             )
         else:
             return await self._client.edit_inline_text(
@@ -225,7 +224,8 @@ class CallbackQuery(Object, Update):
                 text=text,
                 parse_mode=parse_mode,
                 disable_web_page_preview=disable_web_page_preview,
-                reply_markup=reply_markup
+                reply_markup=reply_markup,
+                business_connection_id=getattr(self.message, "business_connection_id", None)
             )
 
     async def edit_message_caption(
@@ -256,7 +256,12 @@ class CallbackQuery(Object, Update):
         Raises:
             RPCError: In case of a Telegram RPC error.
         """
-        return await self.edit_message_text(caption, parse_mode, reply_markup=reply_markup)
+        return await self.edit_message_text(
+            caption,
+            parse_mode,
+            reply_markup=reply_markup,
+            business_connection_id=getattr(self.message, "business_connection_id", None)
+        )
 
     async def edit_message_media(
         self,
@@ -287,13 +292,14 @@ class CallbackQuery(Object, Update):
                 message_id=self.message.id,
                 media=media,
                 reply_markup=reply_markup,
-                business_connection_id=self.message.business_connection_id
+                business_connection_id=getattr(self.message, "business_connection_id", None)
             )
         else:
             return await self._client.edit_inline_media(
                 inline_message_id=self.inline_message_id,
                 media=media,
-                reply_markup=reply_markup
+                reply_markup=reply_markup,
+                business_connection_id=getattr(self.message, "business_connection_id", None)
             )
 
     async def edit_message_reply_markup(
@@ -320,10 +326,11 @@ class CallbackQuery(Object, Update):
                 chat_id=self.message.chat.id,
                 message_id=self.message.id,
                 reply_markup=reply_markup,
-                business_connection_id=self.message.business_connection_id,
+                business_connection_id=getattr(self.message, "business_connection_id", None)
             )
         else:
             return await self._client.edit_inline_reply_markup(
                 inline_message_id=self.inline_message_id,
-                reply_markup=reply_markup
+                reply_markup=reply_markup,
+                business_connection_id=getattr(self.message, "business_connection_id", None)
             )

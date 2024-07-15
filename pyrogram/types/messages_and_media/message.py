@@ -4182,7 +4182,8 @@ class Message(Object, Update):
             parse_mode=parse_mode,
             caption_entities=caption_entities,
             invert_media=invert_media,
-            reply_markup=reply_markup
+            reply_markup=reply_markup,
+            business_connection_id=self.business_connection_id
         )
 
     async def edit_media(
