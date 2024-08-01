@@ -185,7 +185,7 @@ class SaveFile:
                             file_total_parts=file_total_parts,
                             bytes=chunk
                         )
-                        await asyncio.sleep(0.15)
+                        await asyncio.sleep(0.25)
                         if file_part % 10 == 0 or file_part == file_total_parts:
                             print(f"Sent part {file_part}/{file_total_parts}")
                     else:
