@@ -1,5 +1,4 @@
 #  Pyrofork - Telegram MTProto API Client Library for Python
-#  Copyright (C) 2017-present Dan <https://github.com/delivrance>
 #  Copyright (C) 2022-present Mayuri-Chan <https://github.com/Mayuri-Chan>
 #
 #  This file is part of Pyrofork.
@@ -17,14 +16,34 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with Pyrofork.  If not, see <http://www.gnu.org/licenses/>.
 
-from .active_session import ActiveSession
-from .active_sessions import ActiveSessions
-from .sent_code import SentCode
-from .terms_of_service import TermsOfService
+import pyrogram
 
-__all__ = [
-    "ActiveSession",
-    "ActiveSessions",
-    "SentCode",
-    "TermsOfService",
-]
+from pyrogram import raw
+from ..object import Object
+
+class InputStarsTransaction(Object):
+    """Content of a stars transaction.
+
+    Parameters:
+        id (``str``):
+            Unique transaction identifier.
+
+        is_refund (``bool``, *optional*):
+            True, If the transaction is a refund.
+    """
+    def __init__(
+        self,
+        *,
+        id: str,
+        is_refund: bool = None
+    ):
+        super().__init__()
+
+        self.id = id
+        self.is_refund = is_refund
+
+    async def write(self):
+        return raw.types.InputStarsTransaction(
+            id=self.id,
+            refund=self.is_refund
+        )

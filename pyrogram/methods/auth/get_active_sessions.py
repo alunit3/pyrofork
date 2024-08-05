@@ -16,24 +16,25 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with Pyrogram.  If not, see <http://www.gnu.org/licenses/>.
 
-from .answer_pre_checkout_query import AnswerPreCheckoutQuery
-from .create_invoice_link import CreateInvoiceLink
-from .get_business_connection import GetBusinessConnection
-from .get_stars_transactions import GetStarsTransactions
-from .get_stars_transactions_by_id import GetStarsTransactionsById
-from .refund_stars_payment import RefundStarPayment
-from .send_invoice import SendInvoice
-from .send_paid_media import SendPaidMedia
+from typing import List
+
+import pyrogram
+from pyrogram import raw, types
 
 
-class TelegramBusiness(
-    AnswerPreCheckoutQuery,
-    CreateInvoiceLink,
-    GetBusinessConnection,
-    GetStarsTransactions,
-    GetStarsTransactionsById,
-    RefundStarPayment,
-    SendInvoice,
-    SendPaidMedia
-):
-    pass
+class GetActiveSessions:
+    async def get_active_sessions(
+        self: "pyrogram.Client"
+    ) -> "types.ActiveSessions":
+        """Returns all active sessions of the current user.
+
+        .. include:: /_includes/usable-by/users.rst
+
+        Returns:
+            :obj:`~pyrogram.types.ActiveSessions`: On success, all the active sessions of the current user is returned.
+
+        """
+        r = await self.invoke(
+            raw.functions.account.GetAuthorizations()
+        )
+        return types.ActiveSessions._parse(r)
