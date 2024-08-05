@@ -219,8 +219,10 @@ class Client(Methods):
     APP_VERSION = f"Pyrogram {__version__}"
     DEVICE_MODEL = f"{platform.python_implementation()} {platform.python_version()}"
     SYSTEM_VERSION = f"{platform.system()} {platform.release()}"
+    LANG_PACK = ""
 
     LANG_CODE = "en"
+    SYSTEM_LANG_CODE = "en-US"
 
     PARENT_DIR = Path(sys.argv[0]).parent
 
@@ -246,6 +248,8 @@ class Client(Methods):
         device_model: str = DEVICE_MODEL,
         system_version: str = SYSTEM_VERSION,
         lang_code: str = LANG_CODE,
+        system_lang_code: str = SYSTEM_LANG_CODE,
+        lang_pack: str = LANG_PACK,
         ipv6: Optional[bool] = False,
         alt_port: Optional[bool] = False,
         proxy: Optional[dict] = None,
@@ -281,6 +285,8 @@ class Client(Methods):
         self.device_model = device_model
         self.system_version = system_version
         self.lang_code = lang_code.lower()
+        self.system_lang_code = system_lang_code
+        self.lang_pack = lang_pack.lower()
         self.ipv6 = ipv6
         self.alt_port = alt_port
         self.proxy = proxy
@@ -723,7 +729,7 @@ class Client(Methods):
         if session_empty:
             if not self.api_id or not self.api_hash:
                 raise AttributeError("The API key is required for new authorizations. "
-                                     "More info: https://pyrofork.mayuri.my.id/main/start/auth")
+                                     "More info: https://pyrofork.mayuri.my.id/start/auth")
 
             await self.storage.api_id(self.api_id)
 
