@@ -16,17 +16,23 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with Pyrofork.  If not, see <http://www.gnu.org/licenses/>.
 
-from enum import auto
-from .auto_name import AutoName
+from ..object import Object
+from pyrogram import raw
 
+class ChatTheme(Object):
+    """A service message about a chat theme.
 
-class ReactionType(AutoName):
-    """Reaction type enumeration used in :obj:`~pyrogram.types.ReactionType`."""
-    EMOJI = auto()
-    """Emoji reaction type."""
+    parameters:
+        emoticon (``str``):
+            The emoticon of the chat theme.
+    """
 
-    CUSTOM_EMOJI = auto()
-    """Custom emoji reaction type."""
+    def __init__(self, emoticon: str):
+        super().__init__()
+        self.emoticon = emoticon
 
-    PAID = auto()
-    """Paid reaction type."""
+    @staticmethod
+    def _parse(chat_theme: "raw.types.MessageActionSetChatTheme") -> "ChatTheme":
+        return ChatTheme(
+            emoticon=getattr(chat_theme, "emoticon", None)
+        )

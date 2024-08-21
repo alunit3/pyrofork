@@ -183,6 +183,7 @@ def pyrogram_api():
             send_contact
             send_cached_media
             send_reaction
+            send_paid_reaction
             edit_message_text
             edit_message_caption
             edit_message_media
@@ -519,6 +520,7 @@ def pyrogram_api():
             VideoChatMembersInvited
             WebAppData
             MessageReactions
+            MessageReactor
             ChatReactions
             ForumTopicCreated
             ForumTopicEdited
@@ -527,10 +529,16 @@ def pyrogram_api():
             GeneralTopicHidden
             GeneralTopicUnhidden
             Reaction
-            ReactionCount
-            ReactionType
             MessageReactionUpdated
             MessageReactionCountUpdated
+            ExportedStoryLink
+            ChatTheme
+            ChatWallpaper
+            ContactRegistered
+            GiftCode
+            ScreenshotTaken
+            Wallpaper
+            WallpaperSettings
         """,
         stories="""
         Stories
