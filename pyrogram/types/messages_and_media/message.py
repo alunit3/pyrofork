@@ -422,6 +422,10 @@ class Message(Object, Update):
 
         from_scheduled (``bool``, *optional*):
             Message is a scheduled message and has been sent.
+
+        chat_join_type (:obj:`~pyrogram.enums.ChatJoinType`, *optional*):
+            The message is a service message of the type :obj:`~pyrogram.enums.MessageServiceType.NEW_CHAT_MEMBERS`.
+            This field will contain the enumeration type of how the user had joined the chat.
     """
 
     # TODO: Add game missing field, Also connected_website
@@ -482,6 +486,11 @@ class Message(Object, Update):
         giveaway: "types.Giveaway" = None,
         giveaway_result: "types.GiveawayResult" = None,
         boosts_applied: int = None,
+        chat_theme_updated: "types.ChatTheme" = None,
+        chat_wallpaper_updated: "types.ChatWallpaper" = None,
+        contact_registered: "types.ContactRegistered" = None,
+        gift_code: "types.GiftCode" = None,
+        screenshot_taken: "types.ScreenshotTaken" = None,
         invoice: "types.Invoice" = None,
         story: Union["types.MessageStory", "types.Story"] = None,
         video: "types.Video" = None,
@@ -537,6 +546,7 @@ class Message(Object, Update):
             "types.ForceReply"
         ] = None,
         reactions: List["types.Reaction"] = None,
+        chat_join_type: "enums.ChatJoinType" = None,
         raw: "raw.types.Message" = None
     ):
         super().__init__(client)
@@ -594,6 +604,11 @@ class Message(Object, Update):
         self.giveaway = giveaway
         self.giveaway_result = giveaway_result
         self.boosts_applied = boosts_applied
+        self.chat_theme_updated = chat_theme_updated
+        self.chat_wallpaper_updated = chat_wallpaper_updated
+        self.contact_registered = contact_registered
+        self.gift_code = gift_code
+        self.screenshot_taken = screenshot_taken
         self.invoice = invoice
         self.story = story
         self.video = video
@@ -643,6 +658,7 @@ class Message(Object, Update):
         self.successful_payment = successful_payment
         self.payment_refunded = payment_refunded
         self.reactions = reactions
+        self.chat_join_type = chat_join_type
         self.raw = raw
 
     async def wait_for_click(
@@ -750,8 +766,14 @@ class Message(Object, Update):
             successful_payment = None
             payment_refunded = None
             boosts_applied = None
+            chat_theme_updated = None
+            chat_wallpaper_updated = None
+            contact_registered = None
+            gift_code = None
+            screenshot_taken = None
 
             service_type = None
+            chat_join_type = None
 
             from_user = types.User._parse(client, users.get(user_id, None))
             sender_chat = types.Chat._parse(client, message, users, chats, is_chat=False) if not from_user else None
@@ -759,12 +781,15 @@ class Message(Object, Update):
             if isinstance(action, raw.types.MessageActionChatAddUser):
                 new_chat_members = [types.User._parse(client, users[i]) for i in action.users]
                 service_type = enums.MessageServiceType.NEW_CHAT_MEMBERS
+                chat_join_type = enums.ChatJoinType.BY_ADD
             elif isinstance(action, raw.types.MessageActionChatJoinedByLink):
                 new_chat_members = [types.User._parse(client, users[utils.get_raw_peer_id(message.from_id)])]
                 service_type = enums.MessageServiceType.NEW_CHAT_MEMBERS
+                chat_join_type = enums.ChatJoinType.BY_LINK
             elif isinstance(action, raw.types.MessageActionChatJoinedByRequest):
                 chat_joined_by_request = types.ChatJoinedByRequest()
-                service_type = enums.MessageServiceType.CHAT_JOINED_BY_REQUEST
+                service_type = enums.MessageServiceType.NEW_CHAT_MEMBERS
+                chat_join_type = enums.ChatJoinType.BY_REQUEST
             elif isinstance(action, raw.types.MessageActionChatDeleteUser):
                 left_chat_member = types.User._parse(client, users[action.user_id])
                 service_type = enums.MessageServiceType.LEFT_CHAT_MEMBERS
@@ -849,6 +874,21 @@ class Message(Object, Update):
             elif isinstance(action, raw.types.MessageActionPaymentRefunded):
                 payment_refunded = await types.PaymentRefunded._parse(client, action)
                 service_type = enums.MessageServiceType.PAYMENT_REFUNDED
+            elif isinstance(action, raw.types.MessageActionSetChatTheme):
+                chat_theme_updated = types.ChatTheme._parse(action)
+                service_type = enums.MessageServiceType.CHAT_THEME_UPDATED
+            elif isinstance(action, raw.types.MessageActionSetChatWallPaper):
+                chat_wallpaper_updated = types.ChatWallpaper._parse(client, action)
+                service_type = enums.MessageServiceType.CHAT_WALLPAPER_UPDATED
+            elif isinstance(action, raw.types.MessageActionContactSignUp):
+                contact_registered = types.ContactRegistered()
+                service_type = enums.MessageServiceType.CONTACT_REGISTERED
+            elif isinstance(action, raw.types.MessageActionGiftCode):
+                gift_code = types.GiftCode._parse(client, action, chats)
+                service_type = enums.MessageServiceType.GIFT_CODE
+            elif isinstance(action, raw.types.MessageActionScreenshotTaken):
+                screenshot_taken = types.ScreenshotTaken()
+                service_type = enums.MessageServiceType.SCREENSHOT_TAKEN
 
             parsed_message = Message(
                 id=message.id,
@@ -888,7 +928,13 @@ class Message(Object, Update):
                 successful_payment=successful_payment,
                 payment_refunded=payment_refunded,
                 boosts_applied=boosts_applied,
+                chat_theme_updated=chat_theme_updated,
+                chat_wallpaper_updated=chat_wallpaper_updated,
+                contact_registered=contact_registered,
+                gift_code=gift_code,
+                screenshot_taken=screenshot_taken,
                 raw=message,
+                chat_join_type=chat_join_type,
                 client=client
                 # TODO: supergroup_chat_created
             )
@@ -1100,7 +1146,7 @@ class Message(Object, Update):
             from_user = types.User._parse(client, users.get(user_id, None))
             sender_chat = types.Chat._parse(client, message, users, chats, is_chat=False) if not from_user else None
 
-            reactions = types.MessageReactions._parse(client, message.reactions)
+            reactions = types.MessageReactions._parse(client, message.reactions, users)
 
             if message.via_business_bot_id:
                 sender_business_bot = types.User._parse(client, users.get(message.via_business_bot_id, None))
@@ -2913,7 +2959,8 @@ class Message(Object, Update):
     async def reply_poll(
         self,
         question: str,
-        options: List[str],
+        options: List["types.PollOption"],
+        question_entities: List["types.MessageEntity"] = None,
         is_anonymous: bool = True,
         type: "enums.PollType" = enums.PollType.REGULAR,
         allows_multiple_answers: bool = None,
@@ -2950,20 +2997,34 @@ class Message(Object, Update):
             await client.send_poll(
                 chat_id=message.chat.id,
                 question="This is a poll",
-                options=["A", "B", "C]
+                options=[
+                    PollOption("A"),
+                    PollOption("B"),
+                    PollOption("C")
+                ]
             )
 
         Example:
             .. code-block:: python
 
-                await message.reply_poll("This is a poll", ["A", "B", "C"])
+                await message.reply_poll(
+                    "This is a poll",
+                    [
+                        PollOption("A"),
+                        PollOption("B"),
+                        PollOption("C")
+                    ]
+                )
 
         Parameters:
             question (``str``):
                 Poll question, 1-255 characters.
 
-            options (List of ``str``):
-                List of answer options, 2-10 strings 1-100 characters each.
+            options (List of :obj:`~pyrogram.types.PollOption`):
+                List of PollOption.
+
+            question_entities (List of :obj:`~pyrogram.types.MessageEntity`, *optional*):
+                List of special entities that appear in the poll question, which can be specified instead of *parse_mode*.
 
             is_anonymous (``bool``, *optional*):
                 True, if the poll needs to be anonymous.
@@ -3077,6 +3138,7 @@ class Message(Object, Update):
             chat_id=chat_id,
             question=question,
             options=options,
+            question_entities=question_entities,
             is_anonymous=is_anonymous,
             type=type,
             allows_multiple_answers=allows_multiple_answers,

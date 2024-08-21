@@ -28,9 +28,6 @@ class MessageServiceType(AutoName):
     NEW_CHAT_MEMBERS = auto()
     "New members join"
 
-    CHAT_JOINED_BY_REQUEST = auto()
-    "a member chat join request approved by admin."
-
     LEFT_CHAT_MEMBERS = auto()
     "Left chat members"
 
@@ -117,3 +114,18 @@ class MessageServiceType(AutoName):
 
     BOT_ALLOWED = auto()
     "Bot allowed"
+
+    CHAT_THEME_UPDATED = auto()
+    "Chat theme updated"
+
+    CHAT_WALLPAPER_UPDATED = auto()
+    "Chat wallpaper updated"
+
+    CONTACT_REGISTERED = auto()
+    "Contact registered"
+
+    GIFT_CODE = auto()
+    "Gift code"
+
+    SCREENSHOT_TAKEN = auto()
+    "Screenshot taken"

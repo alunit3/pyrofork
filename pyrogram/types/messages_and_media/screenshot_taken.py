@@ -16,17 +16,14 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with Pyrofork.  If not, see <http://www.gnu.org/licenses/>.
 
-from enum import auto
-from .auto_name import AutoName
+from ..object import Object
 
 
-class ReactionType(AutoName):
-    """Reaction type enumeration used in :obj:`~pyrogram.types.ReactionType`."""
-    EMOJI = auto()
-    """Emoji reaction type."""
+class ScreenshotTaken(Object):
+    """A service message about a screenshot taken.
 
-    CUSTOM_EMOJI = auto()
-    """Custom emoji reaction type."""
+    Currently holds no information.
+    """
 
-    PAID = auto()
-    """Paid reaction type."""
+    def __init__(self):
+        super().__init__()
