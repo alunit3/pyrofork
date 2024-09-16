@@ -62,7 +62,8 @@ from pyrogram.raw.types import (
     UpdateBotMessageReaction,
     UpdateBotMessageReactions,
     UpdateBotShippingQuery,
-    UpdateBusinessBotCallbackQuery
+    UpdateBusinessBotCallbackQuery,
+    UpdateBotPurchasedPaidMedia
 )
 
 log = logging.getLogger(__name__)
@@ -88,6 +89,7 @@ class Dispatcher:
     BOT_BUSSINESS_CONNECT_UPDATES = (UpdateBotBusinessConnect,)
     PRE_CHECKOUT_QUERY_UPDATES = (UpdateBotPrecheckoutQuery,)
     SHIPPING_QUERY_UPDATES = (UpdateBotShippingQuery,)
+    PURCHASED_PAID_MEDIA_UPDATES = (UpdateBotPurchasedPaidMedia,)
 
     def __init__(self, client: "pyrogram.Client"):
         self.client = client
@@ -229,6 +231,12 @@ class Dispatcher:
                 BotBusinessConnectHandler
             )
 
+        async def purchased_paid_media_parser(update, users, chats):
+            return (
+                pyrogram.types.PurchasedPaidMedia._parse(self.client, update, users),
+                ChatBoostHandler
+            )
+
         self.update_parsers = {
             Dispatcher.NEW_MESSAGE_UPDATES: message_parser,
             Dispatcher.NEW_BOT_BUSINESS_MESSAGE_UPDATES: bot_business_message_parser,
@@ -248,7 +256,8 @@ class Dispatcher:
             Dispatcher.PRE_CHECKOUT_QUERY_UPDATES: pre_checkout_query_parser,
             Dispatcher.MESSAGE_BOT_NA_REACTION_UPDATES: message_bot_na_reaction_parser,
             Dispatcher.MESSAGE_BOT_A_REACTION_UPDATES: message_bot_a_reaction_parser,
-            Dispatcher.BOT_BUSSINESS_CONNECT_UPDATES: bot_business_connect_parser
+            Dispatcher.BOT_BUSSINESS_CONNECT_UPDATES: bot_business_connect_parser,
+            Dispatcher.PURCHASED_PAID_MEDIA_UPDATES: purchased_paid_media_parser
         }
 
         self.update_parsers = {key: value for key_tuple, value in self.update_parsers.items() for key in key_tuple}
@@ -265,93 +274,7 @@ class Dispatcher:
             log.info("Started %s HandlerTasks", self.client.workers)
 
             if not self.client.skip_updates:
-                states = await self.client.storage.update_state()
-
-                if not states:
-                    log.info("No states found, skipping recovery.")
-                    return
-
-                message_updates_counter = 0
-                other_updates_counter = 0
-
-                for state in states:
-                    id, local_pts, _, local_date, _ = state
-
-                    prev_pts = 0
-
-                    while True:
-                        try:
-                            diff = await self.client.invoke(
-                                raw.functions.updates.GetChannelDifference(
-                                    channel=await self.client.resolve_peer(id),
-                                    filter=raw.types.ChannelMessagesFilterEmpty(),
-                                    pts=local_pts,
-                                    limit=10000
-                                ) if id < 0 else
-                                raw.functions.updates.GetDifference(
-                                    pts=local_pts,
-                                    date=local_date,
-                                    qts=0
-                                )
-                            )
-                        except (errors.ChannelPrivate, errors.ChannelInvalid):
-                            break
-
-                        if isinstance(diff, raw.types.updates.DifferenceEmpty):
-                            break
-                        elif isinstance(diff, raw.types.updates.DifferenceTooLong):
-                            break
-                        elif isinstance(diff, raw.types.updates.Difference):
-                            local_pts = diff.state.pts
-                        elif isinstance(diff, raw.types.updates.DifferenceSlice):
-                            local_pts = diff.intermediate_state.pts
-                            local_date = diff.intermediate_state.date
-
-                            if prev_pts == local_pts:
-                                break
-
-                            prev_pts = local_pts
-                        elif isinstance(diff, raw.types.updates.ChannelDifferenceEmpty):
-                            break
-                        elif isinstance(diff, raw.types.updates.ChannelDifferenceTooLong):
-                            break
-                        elif isinstance(diff, raw.types.updates.ChannelDifference):
-                            local_pts = diff.pts
-
-                        users = {i.id: i for i in diff.users}
-                        chats = {i.id: i for i in diff.chats}
-
-                        for message in diff.new_messages:
-                            message_updates_counter += 1
-                            self.updates_queue.put_nowait(
-                                (
-                                    raw.types.UpdateNewMessage(
-                                        message=message,
-                                        pts=local_pts,
-                                        pts_count=-1
-                                    ) if id == self.client.me.id else
-                                    raw.types.UpdateNewChannelMessage(
-                                        message=message,
-                                        pts=local_pts,
-                                        pts_count=-1
-                                    ),
-                                    users,
-                                    chats
-                                )
-                            )
-
-                        for update in diff.other_updates:
-                            other_updates_counter += 1
-                            self.updates_queue.put_nowait(
-                                (update, users, chats)
-                            )
-
-                        if isinstance(diff, (raw.types.updates.Difference, raw.types.updates.ChannelDifference)):
-                            break
-
-                    await self.client.storage.update_state(id)
-
-                log.info("Recovered %s messages and %s updates.", message_updates_counter, other_updates_counter)
+                await self.client.recover_gaps()
 
     async def stop(self):
         if not self.client.no_updates:
