@@ -40,6 +40,7 @@ from .get_discussion_replies import GetDiscussionReplies
 from .get_discussion_replies_count import GetDiscussionRepliesCount
 from .get_media_group import GetMediaGroup
 from .get_messages import GetMessages
+from .get_message_read_participants import GetMessageReadParticipants
 from .get_scheduled_messages import GetScheduledMessages
 from .read_chat_history import ReadChatHistory
 from .retract_vote import RetractVote
@@ -59,7 +60,6 @@ from .send_document import SendDocument
 from .send_location import SendLocation
 from .send_media_group import SendMediaGroup
 from .send_message import SendMessage
-from .send_paid_reaction import SendPaidReaction
 from .send_photo import SendPhoto
 from .send_poll import SendPoll
 from .send_reaction import SendReaction
@@ -85,6 +85,7 @@ class Messages(
     GetAvailableEffects,
     GetMediaGroup,
     GetMessages,
+    GetMessageReadParticipants,
     GetScheduledMessages,
     SendAudio,
     SendChatAction,
@@ -94,7 +95,6 @@ class Messages(
     SendLocation,
     SendMediaGroup,
     SendMessage,
-    SendPaidReaction,
     SendPhoto,
     SendSticker,
     SendVenue,

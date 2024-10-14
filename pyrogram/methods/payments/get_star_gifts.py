@@ -17,28 +17,30 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with Pyrofork.  If not, see <http://www.gnu.org/licenses/>.
 
-__fork_name__ = "PyroFork"
-__version__ = "2.3.48"
-__license__ = "GNU Lesser General Public License v3.0 (LGPL-3.0)"
-__copyright__ = "Copyright (C) 2022-present Mayuri-Chan <https://github.com/Mayuri-Chan>"
+from typing import List
 
-from concurrent.futures.thread import ThreadPoolExecutor
+import pyrogram
+from pyrogram import raw, types
 
 
-class StopTransmission(Exception):
-    pass
+class GetStarGifts:
+    async def get_star_gifts(
+        self: "pyrogram.Client",
+    ) -> List["types.StarGift"]:
+        """Get all available star gifts to send.
 
+        .. include:: /_includes/usable-by/users.rst
 
-class StopPropagation(StopAsyncIteration):
-    pass
+        Returns:
+            List of :obj:`~pyrogram.types.StarGift`: On success, a list of star gifts is returned.
 
+        Example:
+            .. code-block:: python
 
-class ContinuePropagation(StopAsyncIteration):
-    pass
+                app.get_star_gifts()
+        """
+        r = await self.invoke(
+            raw.functions.payments.GetStarGifts(hash=0)
+        )
 
-
-from . import raw, types, filters, handlers, emoji, enums
-from .client import Client
-from .sync import idle, compose
-
-crypto_executor = ThreadPoolExecutor(1, thread_name_prefix="CryptoWorker")
+        return types.List([await types.StarGift._parse(self, gift) for gift in r.gifts])
