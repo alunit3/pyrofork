@@ -27,12 +27,9 @@ from .contact_registered import ContactRegistered
 from .dice import Dice
 from .document import Document
 from .game import Game
-from .gift_code import GiftCode
-from .gifted_premium import GiftedPremium
 from .giveaway import Giveaway
 from .giveaway_launched import GiveawayLaunched
 from .giveaway_result import GiveawayResult
-from .labeled_price import LabeledPrice
 from .location import Location
 from .media_area import MediaArea
 from .media_area_channel_post import MediaAreaChannelPost
@@ -43,6 +40,7 @@ from .photo import Photo
 from .poll import Poll
 from .poll_option import PollOption
 from .reaction import Reaction
+from .read_participant import ReadParticipant
 from .screenshot_taken import ScreenshotTaken
 from .sticker import Sticker
 from .stickerset import StickerSet
@@ -82,12 +80,9 @@ __all__ = [
     "ContactRegistered",
     "Document",
     "Game",
-    "GiftCode",
-    "GiftedPremium",
     "Giveaway",
     "GiveawayLaunched",
     "GiveawayResult",
-    "LabeledPrice",
     "Location",
     "MediaArea",
     "MediaAreaChannelPost",
@@ -116,6 +111,7 @@ __all__ = [
     "MessageReactionCountUpdated",
     "MessageReactor",
     "MessageStory",
+    "ReadParticipant",
     "ScreenshotTaken",
     "Story",
     "StoryDeleted",

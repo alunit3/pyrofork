@@ -183,7 +183,6 @@ def pyrogram_api():
             send_contact
             send_cached_media
             send_reaction
-            send_paid_reaction
             edit_message_text
             edit_message_caption
             edit_message_media
@@ -197,6 +196,7 @@ def pyrogram_api():
             delete_scheduled_messages
             get_available_effects
             get_messages
+            get_message_read_participants
             get_scheduled_messages
             get_media_group
             get_chat_history
@@ -344,6 +344,27 @@ def pyrogram_api():
             get_contacts
             get_contacts_count
         """,
+        payments="""
+        Payments
+            apply_gift_code
+            check_gift_code
+            convert_star_gift
+            create_invoice_link
+            get_payment_form
+            get_star_gifts
+            get_stars_transactions
+            get_stars_transactions_by_id
+            get_user_star_gifts_count
+            get_user_star_gifts
+            hide_star_gift
+            refund_star_payment
+            send_invoice
+            send_paid_media
+            send_paid_reaction
+            send_payment_form
+            send_star_gift
+            show_star_gift
+        """,
         password="""
         Password
             enable_cloud_password
@@ -376,13 +397,7 @@ def pyrogram_api():
         Telegram Business
             answer_pre_checkout_query
             answer_shipping_query
-            create_invoice_link
             get_business_connection
-            get_stars_transactions
-            get_stars_transactions_by_id
-            refund_star_payment
-            send_invoice
-            send_paid_media
         """,
         authorization="""
         Authorization
@@ -492,7 +507,6 @@ def pyrogram_api():
             AvailableEffect
             Document
             Animation
-            LabeledPrice
             Video
             Voice
             VideoNote
@@ -502,7 +516,6 @@ def pyrogram_api():
             Sticker
             StickerSet
             Game
-            GiftedPremium
             Giveaway
             GiveawayLaunched
             GiveawayResult
@@ -515,6 +528,7 @@ def pyrogram_api():
             PollOption
             Dice
             Reaction
+            StarGift
             VideoChatScheduled
             VideoChatStarted
             VideoChatEnded
@@ -536,7 +550,7 @@ def pyrogram_api():
             ChatTheme
             ChatWallpaper
             ContactRegistered
-            GiftCode
+            ReadParticipant
             ScreenshotTaken
             Wallpaper
             WallpaperSettings
@@ -554,6 +568,25 @@ def pyrogram_api():
             MediaAreaCoordinates
             InputMediaArea
             InputMediaAreaChannelPost
+        """,
+        payment="""
+        Payment
+            CheckedGiftCode
+            ExtendedMediaPreview
+            GiftCode
+            GiftedPremium
+            InputStarsTransaction
+            Invoice
+            LabeledPrice
+            PaidMedia
+            PaymentForm
+            PaymentInfo
+            PaymentRefunded
+            PurchasedPaidMedia
+            StarsStatus
+            StarsTransaction
+            SuccessfulPayment
+            UserStarGift
         """,
         pyromod="""
         Pyromod
@@ -591,8 +624,6 @@ def pyrogram_api():
             MenuButtonWebApp
             MenuButtonDefault
             SentWebAppMessage
-            PreCheckoutQuery
-            PurchasedPaidMedia
         """,
         bot_commands="""
         Bot commands
@@ -608,18 +639,10 @@ def pyrogram_api():
         """,
         business="""
         Telegram Business
-            ExtendedMediaPreview
-            InputStarsTransaction
-            Invoice
-            PaidMedia
-            PaymentInfo
-            PaymentRefunded
+            PreCheckoutQuery
             ShippingAddress
             ShippingOption
             ShippingQuery
-            StarsStatus
-            StarsTransaction
-            SuccessfulPayment
         """,
         input_media="""
         Input Media

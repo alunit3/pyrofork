@@ -816,7 +816,7 @@ class Client(Methods):
         if session_empty:
             if not self.api_id or not self.api_hash:
                 raise AttributeError("The API key is required for new authorizations. "
-                                     "More info: https://pyrofork.mayuri.my.id/start/auth")
+                                     "More info: https://pyrofork.wulan17.top/main/start/auth")
 
             await self.storage.api_id(self.api_id)
 
@@ -887,15 +887,15 @@ class Client(Methods):
                         root.replace(".", "/"), path.replace(".", "/")
                     )
                     if handler is None:
-                        exclude_plugins.append(module_path.replace("/", "."))
+                        exclude_plugins.append(module_path.replace("/", ".").replace("\\", "."))
                     else:
-                        exclude_handlers[module_path.replace("/", ".")] = handler
+                        exclude_handlers[module_path.replace("/", ".").replace("\\", ".")] = handler
 
             count = 0
 
             if not include:
                 for current_root, dirnames, filenames in os.walk(root.replace(".", "/")):
-                    namespace = current_root.replace("/", ".")
+                    namespace = current_root.replace("/", ".").replace("\\", ".")
                     if "__pycache__" in namespace:
                         continue
                     if namespace in exclude_plugins:
@@ -963,7 +963,7 @@ class Client(Methods):
                                             pass
             else:
                 for path, handlers in include:
-                    module_path = root.replace("/", ".") + "." + path
+                    module_path = root.replace("/", ".").replace("\\", ".") + "." + path
                     if self.is_excluded(exclude_plugins, module_path):
                         log.warning(
                             '[%s] [LOAD] Ignoring namespace "%s"', self.name, module_path
@@ -984,7 +984,7 @@ class Client(Methods):
 
                     if "__path__" in dir(module):
                         for current_root, _, filenames in os.walk(module_path.replace(".", "/")):
-                            namespace = current_root.replace("/", ".")
+                            namespace = current_root.replace("/", ".").replace("\\", ".")
                             if "__pycache__" in namespace:
                                 continue
                             if namespace in exclude_plugins:

@@ -28,6 +28,7 @@ from .messages import Messages
 from .password import Password
 from .pyromod import Pyromod
 from .stickers import Stickers
+from .payments import Payments
 from .users import Users
 from .utilities import Utilities
 from .business import TelegramBusiness
@@ -40,6 +41,7 @@ class Methods(
     Contacts,
     Password,
     Pyromod,
+    Payments,
     Chats,
     Stickers,
     Users,

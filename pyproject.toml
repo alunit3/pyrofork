@@ -19,6 +19,7 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: Implementation",
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
@@ -42,7 +43,7 @@ Homepage = "https://github.com/Mayuri-Chan"
 Tracker = "https://github.com/Mayuri-Chan/pyrofork/issues"
 Community = "https://t.me/MayuriChan_Chat"
 Source = "https://github.com/Mayuri-Chan/pyrofork"
-Documentation = "https://pyrofork.mayuri.my.id"
+Documentation = "https://pyrofork.wulan17.top"
 
 [build-system]
 requires = ["hatchling"]
@@ -59,7 +60,7 @@ dev = [
 
 docs = [
     "sphinx",
-    "sphinx-immaterial==0.12.2",
+    "sphinx-immaterial==0.12.3",
     "sphinx_copybutton",
     "sphinx-autobuild",
     "tornado>=6.3.3"
