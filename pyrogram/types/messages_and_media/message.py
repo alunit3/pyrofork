@@ -412,7 +412,14 @@ class Message(Object, Update):
             The raw message object, as received from the Telegram API.
 
         gift_code (:obj:`~pyrogram.types.GiftCode`, *optional*):
+            Service message: gift code information.
             Contains a `Telegram Premium giftcode link <https://core.telegram.org/api/links#premium-giftcode-links>`_.
+
+        user_gift (:obj:`~pyrogram.types.UserGift`, *optional*):
+            Service message: Represents a gift received by a user.
+
+        star_gift (:obj:`~pyrogram.types.StarGift`, *optional*):
+            Service message: star gift information.
 
         gifted_premium (:obj:`~pyrogram.types.GiftedPremium`, *optional*):
             Info about a gifted Telegram Premium subscription
@@ -494,9 +501,12 @@ class Message(Object, Update):
         chat_wallpaper_updated: "types.ChatWallpaper" = None,
         contact_registered: "types.ContactRegistered" = None,
         gift_code: "types.GiftCode" = None,
+        user_gift: "types.UserGift" = None,
+        star_gift: "types.StarGift" = None,
         screenshot_taken: "types.ScreenshotTaken" = None,
         invoice: "types.Invoice" = None,
         story: Union["types.MessageStory", "types.Story"] = None,
+        alternative_videos: List["types.AlternativeVideo"] = None,
         video: "types.Video" = None,
         voice: "types.Voice" = None,
         video_note: "types.VideoNote" = None,
@@ -613,10 +623,13 @@ class Message(Object, Update):
         self.chat_wallpaper_updated = chat_wallpaper_updated
         self.contact_registered = contact_registered
         self.gift_code = gift_code
+        self.user_gift = user_gift
+        self.star_gift = star_gift
         self.screenshot_taken = screenshot_taken
         self.invoice = invoice
         self.story = story
         self.video = video
+        self.alternative_videos = alternative_videos
         self.voice = voice
         self.video_note = video_note
         self.web_page_preview = web_page_preview
@@ -775,6 +788,8 @@ class Message(Object, Update):
             chat_wallpaper_updated = None
             contact_registered = None
             gift_code = None
+            user_gift = None
+            star_gift = None
             screenshot_taken = None
 
             service_type = None
@@ -891,6 +906,12 @@ class Message(Object, Update):
             elif isinstance(action, raw.types.MessageActionGiftCode):
                 gift_code = types.GiftCode._parse(client, action, chats)
                 service_type = enums.MessageServiceType.GIFT_CODE
+            elif isinstance(action, raw.types.MessageActionStarGift):
+                user_gift = await types.UserGift._parse_action(client, message, users)
+                service_type = enums.MessageServiceType.USER_GIFT
+            elif isinstance(action, raw.types.MessageActionStarGift):
+                star_gift = await types.StarGift._parse_action(client, message, users)
+                service_type = enums.MessageServiceType.STAR_GIFT
             elif isinstance(action, raw.types.MessageActionScreenshotTaken):
                 screenshot_taken = types.ScreenshotTaken()
                 service_type = enums.MessageServiceType.SCREENSHOT_TAKEN
@@ -931,6 +952,8 @@ class Message(Object, Update):
                 giveaway_launched=giveaway_launched,
                 giveaway_result=giveaway_result,
                 successful_payment=successful_payment,
+                user_gift=user_gift,
+                star_gift=star_gift,
                 payment_refunded=payment_refunded,
                 boosts_applied=boosts_applied,
                 chat_theme_updated=chat_theme_updated,
@@ -1034,6 +1057,7 @@ class Message(Object, Update):
             voice = None
             animation = None
             video = None
+            alternative_videos = []
             video_note = None
             web_page_preview = None
             sticker = None
@@ -1101,6 +1125,22 @@ class Message(Object, Update):
                                 video = types.Video._parse(client, doc, video_attributes, file_name, media.ttl_seconds)
                                 media_type = enums.MessageMediaType.VIDEO
                                 has_media_spoiler = media.spoiler
+
+                                altdocs = media.alt_documents or []
+                                for altdoc in altdocs:
+                                    if isinstance(altdoc, raw.types.Document):
+                                        altdoc_attributes = {type(i): i for i in altdoc.attributes}
+
+                                        altdoc_file_name = getattr(
+                                            altdoc_attributes.get(
+                                                raw.types.DocumentAttributeFilename, None
+                                            ), "file_name", None
+                                        )
+                                        altdoc_video_attribute = altdoc_attributes.get(raw.types.DocumentAttributeVideo, None)
+                                        if altdoc_video_attribute:
+                                            alternative_videos.append(
+                                                types.AlternativeVideo._parse(client, altdoc, altdoc_video_attribute, altdoc_file_name)
+                                            )
                         elif raw.types.DocumentAttributeAudio in attributes:
                             audio_attributes = attributes[raw.types.DocumentAttributeAudio]
 
@@ -1217,6 +1257,7 @@ class Message(Object, Update):
                 invoice=invoice,
                 story=story,
                 video=video,
+                alternative_videos=types.List(alternative_videos) if alternative_videos else None,
                 video_note=video_note,
                 web_page_preview=web_page_preview,
                 sticker=sticker,
@@ -1371,6 +1412,7 @@ class Message(Object, Update):
         quote_entities: List["types.MessageEntity"] = None,
         schedule_date: datetime = None,
         protect_content: bool = None,
+        allow_paid_broadcast: bool = None,
         message_effect_id: int = None,
         invert_media: bool = None,
         reply_markup=None
@@ -1443,6 +1485,9 @@ class Message(Object, Update):
             protect_content (``bool``, *optional*):
                 Protects the contents of the sent message from forwarding and saving.
 
+            allow_paid_broadcast (``bool``, *optional*):
+                Pass True to allow the message to ignore regular broadcast limits for a small fee; for bots.
+
             message_effect_id (``int`` ``64-bit``, *optional*):
                 Unique identifier of the message effect to be added to the message; for private chats only.
 
@@ -1494,6 +1539,7 @@ class Message(Object, Update):
             quote_entities=quote_entities,
             schedule_date=schedule_date,
             protect_content=protect_content,
+            allow_paid_broadcast=allow_paid_broadcast,
             message_effect_id=message_effect_id,
             invert_media=invert_media,
             reply_markup=reply_markup
@@ -1527,6 +1573,7 @@ class Message(Object, Update):
         reply_in_chat_id: Union[int, str] = None,
         quote_text: str = None,
         quote_entities: List["types.MessageEntity"] = None,
+        allow_paid_broadcast: bool = None,
         message_effect_id: int = None,
         progress: Callable = None,
         progress_args: tuple = ()
@@ -1615,6 +1662,9 @@ class Message(Object, Update):
                 List of special entities that appear in quote_text, which can be specified instead of *parse_mode*.
                 for reply_to_message only.
 
+            allow_paid_broadcast (``bool``, *optional*):
+                Pass True to allow the message to ignore regular broadcast limits for a small fee; for bots.
+
             message_effect_id (``int`` ``64-bit``, *optional*):
                 Unique identifier of the message effect to be added to the message; for private chats only.
 
@@ -1693,6 +1743,7 @@ class Message(Object, Update):
             reply_to_chat_id=reply_to_chat_id,
             quote_text=quote_text,
             quote_entities=quote_entities,
+            allow_paid_broadcast=allow_paid_broadcast,
             message_effect_id=message_effect_id,
             invert_media=invert_media,
             reply_markup=reply_markup,
@@ -1718,6 +1769,7 @@ class Message(Object, Update):
         reply_in_chat_id: Union[int, str] = None,
         quote_text: str = None,
         quote_entities: List["types.MessageEntity"] = None,
+        allow_paid_broadcast: bool = None,
         message_effect_id: int = None,
         reply_markup: Union[
             "types.InlineKeyboardMarkup",
@@ -1808,6 +1860,9 @@ class Message(Object, Update):
                 List of special entities that appear in quote_text, which can be specified instead of *parse_mode*.
                 for reply_to_message only.
 
+            allow_paid_broadcast (``bool``, *optional*):
+                Pass True to allow the message to ignore regular broadcast limits for a small fee; for bots.
+
             message_effect_id (``int`` ``64-bit``, *optional*):
                 Unique identifier of the message effect to be added to the message; for private chats only.
 
@@ -1882,6 +1937,7 @@ class Message(Object, Update):
             reply_to_chat_id=reply_to_chat_id,
             quote_text=quote_text,
             quote_entities=quote_entities,
+            allow_paid_broadcast=allow_paid_broadcast,
             message_effect_id=message_effect_id,
             reply_markup=reply_markup,
             progress=progress,
@@ -1900,6 +1956,7 @@ class Message(Object, Update):
         reply_in_chat_id: Union[int, str] = None,
         quote_text: str = None,
         quote_entities: List["types.MessageEntity"] = None,
+        allow_paid_broadcast: bool = None,
         reply_markup: Union[
             "types.InlineKeyboardMarkup",
             "types.ReplyKeyboardMarkup",
@@ -1962,6 +2019,9 @@ class Message(Object, Update):
                 List of special entities that appear in quote_text, which can be specified instead of *parse_mode*.
                 for reply_to_message only.
 
+            allow_paid_broadcast (``bool``, *optional*):
+                Pass True to allow the message to ignore regular broadcast limits for a small fee; for bots.
+
             reply_markup (:obj:`~pyrogram.types.InlineKeyboardMarkup` | :obj:`~pyrogram.types.ReplyKeyboardMarkup` | :obj:`~pyrogram.types.ReplyKeyboardRemove` | :obj:`~pyrogram.types.ForceReply`, *optional*):
                 Additional interface options. An object for an inline keyboard, custom reply keyboard,
                 instructions to remove reply keyboard or to force a reply from the user.
@@ -2000,6 +2060,7 @@ class Message(Object, Update):
             reply_to_chat_id=reply_to_chat_id,
             quote_text=quote_text,
             quote_entities=quote_entities,
+            allow_paid_broadcast=allow_paid_broadcast,
             reply_markup=reply_markup
         )
 
@@ -2080,6 +2141,7 @@ class Message(Object, Update):
         reply_in_chat_id: Union[int, str] = None,
         quote_text: str = None,
         quote_entities: List["types.MessageEntity"] = None,
+        allow_paid_broadcast: bool = None,
         parse_mode: Optional["enums.ParseMode"] = None,
         reply_markup: Union[
             "types.InlineKeyboardMarkup",
@@ -2146,6 +2208,9 @@ class Message(Object, Update):
                 List of special entities that appear in quote_text, which can be specified instead of *parse_mode*.
                 for reply_to_message only.
 
+            allow_paid_broadcast (``bool``, *optional*):
+                Pass True to allow the message to ignore regular broadcast limits for a small fee; for bots
+
             parse_mode (:obj:`~pyrogram.enums.ParseMode`, *optional*):
                 By default, quote_text are parsed using both Markdown and HTML styles.
                 You can combine both syntaxes together.
@@ -2193,6 +2258,7 @@ class Message(Object, Update):
             business_connection_id=business_connection_id,
             quote_text=quote_text,
             quote_entities=quote_entities,
+            allow_paid_broadcast=allow_paid_broadcast,
             parse_mode=parse_mode,
             reply_markup=reply_markup
         )
@@ -2213,6 +2279,7 @@ class Message(Object, Update):
         reply_in_chat_id: Union[int, str] = None,
         quote_text: str = None,
         quote_entities: List["types.MessageEntity"] = None,
+        allow_paid_broadcast: bool = None,
         message_effect_id: int = None,
         schedule_date: datetime = None,
         reply_markup: Union[
@@ -2300,6 +2367,9 @@ class Message(Object, Update):
                 List of special entities that appear in quote_text, which can be specified instead of *parse_mode*.
                 for reply_to_message only.
 
+            allow_paid_broadcast (``bool``, *optional*):
+                Pass True to allow the message to ignore regular broadcast limits for a small fee; for bots.
+
             message_effect_id (``int`` ``64-bit``, *optional*):
                 Unique identifier of the message effect to be added to the message; for private chats only.
             
@@ -2375,6 +2445,7 @@ class Message(Object, Update):
             reply_to_chat_id=reply_to_chat_id,
             quote_text=quote_text,
             quote_entities=quote_entities,
+            allow_paid_broadcast=allow_paid_broadcast,
             message_effect_id=message_effect_id,
             schedule_date=schedule_date,
             reply_markup=reply_markup,
@@ -2389,6 +2460,7 @@ class Message(Object, Update):
         disable_notification: bool = None,
         reply_to_message_id: int = None,
         business_connection_id: str = None,
+        allow_paid_broadcast: bool = None,
         reply_markup: Union[
             "types.InlineKeyboardMarkup",
             "types.ReplyKeyboardMarkup",
@@ -2432,6 +2504,9 @@ class Message(Object, Update):
                 Business connection identifier.
                 for business bots only.
 
+            allow_paid_broadcast (``bool``, *optional*):
+                Pass True to allow the message to ignore regular broadcast limits for a small fee; for bots.
+
             reply_markup (:obj:`~pyrogram.types.InlineKeyboardMarkup`, *optional*):
                 An object for an inline keyboard. If empty, one ‘Play game_title’ button will be shown automatically.
                 If not empty, the first button must launch the game.
@@ -2462,6 +2537,7 @@ class Message(Object, Update):
             message_thread_id=message_thread_id,
             reply_to_message_id=reply_to_message_id,
             business_connection_id=business_connection_id,
+            allow_paid_broadcast=allow_paid_broadcast,
             reply_markup=reply_markup
         )
 
@@ -2559,6 +2635,7 @@ class Message(Object, Update):
         reply_in_chat_id: Union[int, str] = None,
         quote_text: str = None,
         quote_entities: List["types.MessageEntity"] = None,
+        allow_paid_broadcast: bool = None,
         parse_mode: Optional["enums.ParseMode"] = None,
         reply_markup: Union[
             "types.InlineKeyboardMarkup",
@@ -2622,6 +2699,9 @@ class Message(Object, Update):
                 List of special entities that appear in quote_text, which can be specified instead of *parse_mode*.
                 for reply_to_message only.
 
+            allow_paid_broadcast (``bool``, *optional*):
+                Pass True to allow the message to ignore regular broadcast limits for a small fee; for bots
+
             parse_mode (:obj:`~pyrogram.enums.ParseMode`, *optional*):
                 By default, quote_text are parsed using both Markdown and HTML styles.
                 You can combine both syntaxes together.
@@ -2668,6 +2748,7 @@ class Message(Object, Update):
             reply_to_chat_id=reply_to_chat_id,
             quote_text=quote_text,
             quote_entities=quote_entities,
+            allow_paid_broadcast=allow_paid_broadcast,
             parse_mode=parse_mode,
             reply_markup=reply_markup
         )
@@ -2687,6 +2768,7 @@ class Message(Object, Update):
         business_connection_id: str = None,
         quote_text: str = None,
         quote_entities: List["types.MessageEntity"] = None,
+        allow_paid_broadcast: bool = None,
         parse_mode: Optional["enums.ParseMode"] = None,
         invert_media: bool = None
     ) -> List["types.Message"]:
@@ -2740,6 +2822,9 @@ class Message(Object, Update):
                 List of special entities that appear in quote_text, which can be specified instead of *parse_mode*.
                 for reply_to_message only.
 
+            allow_paid_broadcast (``bool``, *optional*):
+                Pass True to allow the message to ignore regular broadcast limits for a small fee; for bots
+
             invert_media (``bool``, *optional*):
                 Inverts the position of the media and caption.
 
@@ -2778,6 +2863,7 @@ class Message(Object, Update):
             business_connection_id=business_connection_id,
             reply_to_chat_id=reply_to_chat_id,
             quote_text=quote_text,
+            quote_entities=quote_entities,
             invert_media=invert_media
         )
 
@@ -2796,6 +2882,7 @@ class Message(Object, Update):
         reply_in_chat_id: Union[int, str] = None,
         quote_text: str = None,
         quote_entities: List["types.MessageEntity"] = None,
+        allow_paid_broadcast: bool = None,
         message_effect_id: int = None,
         view_once: bool = None,
         invert_media: bool = None,
@@ -2884,6 +2971,9 @@ class Message(Object, Update):
                 List of special entities that appear in quote_text, which can be specified instead of *parse_mode*.
                 for reply_to_message only.
 
+            allow_paid_broadcast (``bool``, *optional*):
+                Pass True to allow the message to ignore regular broadcast limits for a small fee; for bots
+
             message_effect_id (``int`` ``64-bit``, *optional*):
                 Unique identifier of the message effect to be added to the message; for private chats only.
 
@@ -2955,6 +3045,7 @@ class Message(Object, Update):
             reply_to_chat_id=reply_to_chat_id,
             quote_text=quote_text,
             quote_entities=quote_entities,
+            allow_paid_broadcast=allow_paid_broadcast,
             message_effect_id=message_effect_id,
             view_once=view_once,
             invert_media=invert_media,
@@ -2986,6 +3077,7 @@ class Message(Object, Update):
         reply_in_chat_id: Union[int, str] = None,
         quote_text: str = None,
         quote_entities: List["types.MessageEntity"] = None,
+        allow_paid_broadcast: bool = None,
         parse_mode: Optional["enums.ParseMode"] = None,
         schedule_date: datetime = None,
         reply_markup: Union[
@@ -3104,6 +3196,9 @@ class Message(Object, Update):
                 List of special entities that appear in quote_text, which can be specified instead of *parse_mode*.
                 for reply_to_message only.
 
+            allow_paid_broadcast (``bool``, *optional*):
+                Pass True to allow the message to ignore regular broadcast limits for a small fee; for bots.
+
             parse_mode (:obj:`~pyrogram.enums.ParseMode`, *optional*):
                 By default, quote_text are parsed using both Markdown and HTML styles.
                 You can combine both syntaxes together.
@@ -3164,6 +3259,7 @@ class Message(Object, Update):
             reply_to_chat_id=reply_to_chat_id,
             quote_text=quote_text,
             quote_entities=quote_entities,
+            allow_paid_broadcast=allow_paid_broadcast,
             parse_mode=parse_mode,
             schedule_date=schedule_date,
             reply_markup=reply_markup
@@ -3180,6 +3276,7 @@ class Message(Object, Update):
         reply_in_chat_id: Union[int, str] = None,
         quote_text: str = None,
         quote_entities: List["types.MessageEntity"] = None,
+        allow_paid_broadcast: bool = None,
         message_effect_id: int = None,
         parse_mode: Optional["enums.ParseMode"] = None,
         reply_markup: Union[
@@ -3244,6 +3341,9 @@ class Message(Object, Update):
             quote_entities (List of :obj:`~pyrogram.types.MessageEntity`, *optional*):
                 List of special entities that appear in quote_text, which can be specified instead of *parse_mode*.
                 for reply_to_message only.
+
+            allow_paid_broadcast (``bool``, *optional*):
+                Pass True to allow the message to ignore regular broadcast limits for a small fee; for bots
 
             message_effect_id (``int`` ``64-bit``, *optional*):
                 Unique identifier of the message effect to be added to the message; for private chats only.
@@ -3317,6 +3417,7 @@ class Message(Object, Update):
             reply_to_chat_id=reply_to_chat_id,
             quote_text=quote_text,
             quote_entities=quote_entities,
+            allow_paid_broadcast=allow_paid_broadcast,
             message_effect_id=message_effect_id,
             parse_mode=parse_mode,
             reply_markup=reply_markup,
@@ -3340,6 +3441,7 @@ class Message(Object, Update):
         reply_in_chat_id: Union[int, str] = None,
         quote_text: str = None,
         quote_entities: List["types.MessageEntity"] = None,
+        allow_paid_broadcast: bool = None,
         parse_mode: Optional["enums.ParseMode"] = None,
         reply_markup: Union[
             "types.InlineKeyboardMarkup",
@@ -3415,6 +3517,9 @@ class Message(Object, Update):
                 List of special entities that appear in quote_text, which can be specified instead of *parse_mode*.
                 for reply_to_message only.
 
+            allow_paid_broadcast (``bool``, *optional*):
+                Pass True to allow the message to ignore regular broadcast limits for a small fee; for bots
+
             parse_mode (:obj:`~pyrogram.enums.ParseMode`, *optional*):
                 By default, quote_text are parsed using both Markdown and HTML styles.
                 You can combine both syntaxes together.
@@ -3464,6 +3569,7 @@ class Message(Object, Update):
             reply_to_chat_id=reply_to_chat_id,
             quote_text=quote_text,
             quote_entities=quote_entities,
+            allow_paid_broadcast=allow_paid_broadcast,
             parse_mode=parse_mode,
             reply_markup=reply_markup
         )
@@ -3489,6 +3595,7 @@ class Message(Object, Update):
         reply_in_chat_id: Union[int, str] = None,
         quote_text: str = None,
         quote_entities: List["types.MessageEntity"] = None,
+        allow_paid_broadcast: bool = None,
         message_effect_id: int = None,
         invert_media: bool = None,
         reply_markup: Union[
@@ -3591,6 +3698,9 @@ class Message(Object, Update):
                 List of special entities that appear in quote_text, which can be specified instead of *parse_mode*.
                 for reply_to_message only.
 
+            allow_paid_broadcast (``bool``, *optional*):
+                Pass True to allow the message to ignore regular broadcast limits for a small fee; for bots
+
             message_effect_id (``int`` ``64-bit``, *optional*):
                 Unique identifier of the message effect to be added to the message; for private chats only.
 
@@ -3671,6 +3781,7 @@ class Message(Object, Update):
             reply_to_chat_id=reply_to_chat_id,
             quote_text=quote_text,
             quote_entities=quote_entities,
+            allow_paid_broadcast=allow_paid_broadcast,
             message_effect_id=message_effect_id,
             invert_media=invert_media,
             reply_markup=reply_markup,
@@ -3693,6 +3804,7 @@ class Message(Object, Update):
         quote_entities: List["types.MessageEntity"] = None,
         parse_mode: Optional["enums.ParseMode"] = None,
         protect_content: bool = None,
+        allow_paid_broadcast: bool = None,
         message_effect_id: int = None,
         ttl_seconds: int = None,
         reply_markup: Union[
@@ -3770,6 +3882,9 @@ class Message(Object, Update):
             protect_content (``bool``, *optional*):
                 Protects the contents of the sent message from forwarding and saving.
 
+            allow_paid_broadcast (``bool``, *optional*):
+                Pass True to allow the message to ignore regular broadcast limits for a small fee; for bots
+
             message_effect_id (``int`` ``64-bit``, *optional*):
                 Unique identifier of the message effect to be added to the message; for private chats only.
 
@@ -3845,6 +3960,7 @@ class Message(Object, Update):
             quote_text=quote_text,
             quote_entities=quote_entities,
             protect_content=protect_content,
+            allow_paid_broadcast=allow_paid_broadcast,
             message_effect_id=message_effect_id,
             ttl_seconds=ttl_seconds,
             parse_mode=parse_mode,
@@ -3867,6 +3983,7 @@ class Message(Object, Update):
         reply_in_chat_id: Union[int, str] = None,
         quote_text: str = None,
         quote_entities: List["types.MessageEntity"] = None,
+        allow_paid_broadcast: bool = None,
         message_effect_id: int = None,
         reply_markup: Union[
             "types.InlineKeyboardMarkup",
@@ -3941,6 +4058,9 @@ class Message(Object, Update):
                 List of special entities that appear in quote_text, which can be specified instead of *parse_mode*.
                 for reply_to_message only.
 
+            allow_paid_broadcast (``bool``, *optional*):
+                Pass True to allow the message to ignore regular broadcast limits for a small fee; for bots
+
             message_effect_id (``int`` ``64-bit``, *optional*):
                 Unique identifier of the message effect to be added to the message; for private chats only.
 
@@ -4011,6 +4131,7 @@ class Message(Object, Update):
             reply_to_chat_id=reply_to_chat_id,
             quote_text=quote_text,
             quote_entities=quote_entities,
+            allow_paid_broadcast=allow_paid_broadcast,
             message_effect_id=message_effect_id,
             reply_markup=reply_markup,
             progress=progress,
@@ -4033,6 +4154,7 @@ class Message(Object, Update):
         quote_entities: List["types.MessageEntity"] = None,
         schedule_date: datetime = None,
         protect_content: bool = None,
+        allow_paid_broadcast: bool = None,
         message_effect_id: int = None,
         reply_markup=None
     ) -> "Message":
@@ -4107,6 +4229,9 @@ class Message(Object, Update):
             protect_content (``bool``, *optional*):
                 Protects the contents of the sent message from forwarding and saving.
 
+            allow_paid_broadcast (``bool``, *optional*):
+                Pass True to allow the message to ignore regular broadcast limits for a small fee; for bots
+
             message_effect_id (``int`` ``64-bit``, *optional*):
                 Unique identifier of the message effect to be added to the message; for private chats only.
 
@@ -4157,6 +4282,7 @@ class Message(Object, Update):
             quote_entities=quote_entities,
             schedule_date=schedule_date,
             protect_content=protect_content,
+            allow_paid_broadcast=allow_paid_broadcast,
             message_effect_id=message_effect_id,
             reply_markup=reply_markup
         )
@@ -4402,6 +4528,7 @@ class Message(Object, Update):
         disable_notification: bool = None,
         schedule_date: datetime = None,
         protect_content: bool = None,
+        allow_paid_broadcast: bool = None,
         drop_author: bool = None
     ) -> Union["types.Message", List["types.Message"]]:
         """Bound method *forward* of :obj:`~pyrogram.types.Message`.
@@ -4441,6 +4568,9 @@ class Message(Object, Update):
             protect_content (``bool``, *optional*):
                 Protects the contents of the sent message from forwarding and saving.
 
+            allow_paid_broadcast (``bool``, *optional*):
+                Pass True to allow the message to ignore regular broadcast limits for a small fee; for bots
+
             drop_author (``bool``, *optional*):
                 Forwards messages without quoting the original author
 
@@ -4458,6 +4588,7 @@ class Message(Object, Update):
             disable_notification=disable_notification,
             schedule_date=schedule_date,
             protect_content=protect_content,
+            allow_paid_broadcast=allow_paid_broadcast,
             drop_author=drop_author
         )
 
@@ -4473,8 +4604,10 @@ class Message(Object, Update):
         quote_text: str = None,
         quote_entities: List["types.MessageEntity"] = None,
         reply_to_message_id: int = None,
+        reply_to_chat_id: int = None,
         schedule_date: datetime = None,
         protect_content: bool = None,
+        allow_paid_broadcast: bool = None,
         invert_media: bool = None,
         reply_markup: Union[
             "types.InlineKeyboardMarkup",
@@ -4541,11 +4674,19 @@ class Message(Object, Update):
             reply_to_message_id (``int``, *optional*):
                 If the message is a reply, ID of the original message.
 
+            reply_to_chat_id (``int``, *optional*):
+                Unique identifier for the origin chat.
+                for reply to message from another chat.
+                You can also use chat public link in form of *t.me/<username>* (str).
+
             schedule_date (:py:obj:`~datetime.datetime`, *optional*):
                 Date when the message will be automatically sent.
 
             protect_content (``bool``, *optional*):
                 Protects the contents of the sent message from forwarding and saving.
+
+            allow_paid_broadcast (``bool``, *optional*):
+                Pass True to allow the message to ignore regular broadcast limits for a small fee; for bots
 
             invert_media (``bool``, *optional*):
                 Inverts the position of the media and caption.
@@ -4580,10 +4721,12 @@ class Message(Object, Update):
                 disable_notification=disable_notification,
                 message_thread_id=message_thread_id,
                 reply_to_message_id=reply_to_message_id,
+                reply_to_chat_id=reply_to_chat_id,
                 quote_text=quote_text,
-            quote_entities=quote_entities,
+                quote_entities=quote_entities,
                 schedule_date=schedule_date,
                 protect_content=protect_content,
+                allow_paid_broadcast=allow_paid_broadcast,
                 reply_markup=self.reply_markup if reply_markup is object else reply_markup
             )
         elif self.media:
@@ -4593,9 +4736,11 @@ class Message(Object, Update):
                 disable_notification=disable_notification,
                 message_thread_id=message_thread_id,
                 reply_to_message_id=reply_to_message_id,
+                reply_to_chat_id=reply_to_chat_id,
                 schedule_date=schedule_date,
                 has_spoiler=has_spoiler,
                 protect_content=protect_content,
+                allow_paid_broadcast=allow_paid_broadcast,
                 invert_media=invert_media,
                 reply_markup=self.reply_markup if reply_markup is object else reply_markup
             )
@@ -4625,7 +4770,8 @@ class Message(Object, Update):
                     vcard=self.contact.vcard,
                     disable_notification=disable_notification,
                     message_thread_id=message_thread_id,
-                    schedule_date=schedule_date
+                    schedule_date=schedule_date,
+                    allow_paid_broadcast=allow_paid_broadcast,
                 )
             elif self.location:
                 return await self._client.send_location(
@@ -4634,7 +4780,8 @@ class Message(Object, Update):
                     longitude=self.location.longitude,
                     disable_notification=disable_notification,
                     message_thread_id=message_thread_id,
-                    schedule_date=schedule_date
+                    schedule_date=schedule_date,
+                    allow_paid_broadcast=allow_paid_broadcast
                 )
             elif self.venue:
                 return await self._client.send_venue(
@@ -4647,7 +4794,8 @@ class Message(Object, Update):
                     foursquare_type=self.venue.foursquare_type,
                     disable_notification=disable_notification,
                     message_thread_id=message_thread_id,
-                    schedule_date=schedule_date
+                    schedule_date=schedule_date,
+                    allow_paid_broadcast=allow_paid_broadcast
                 )
             elif self.poll:
                 return await self._client.send_poll(
@@ -4661,14 +4809,16 @@ class Message(Object, Update):
                     ],
                     disable_notification=disable_notification,
                     message_thread_id=message_thread_id,
-                    schedule_date=schedule_date
+                    schedule_date=schedule_date,
+                    allow_paid_broadcast=allow_paid_broadcast
                 )
             elif self.game:
                 return await self._client.send_game(
                     chat_id,
                     game_short_name=self.game.short_name,
                     disable_notification=disable_notification,
-                    message_thread_id=message_thread_id
+                    message_thread_id=message_thread_id,
+                    allow_paid_broadcast=allow_paid_broadcast
                 )
             elif self.web_page_preview:
                 return await self._client.send_web_page(
@@ -4682,10 +4832,12 @@ class Message(Object, Update):
                     disable_notification=disable_notification,
                     message_thread_id=message_thread_id,
                     reply_to_message_id=reply_to_message_id,
+                    reply_to_chat_id=reply_to_chat_id,
                     quote_text=quote_text,
                     quote_entities=quote_entities,
                     schedule_date=schedule_date,
                     protect_content=protect_content,
+                    allow_paid_broadcast=allow_paid_broadcast,
                     reply_markup=self.reply_markup if reply_markup is object else reply_markup
                 )
             else:
@@ -4694,7 +4846,8 @@ class Message(Object, Update):
             if self.sticker or self.video_note:  # Sticker and VideoNote should have no caption
                 return await send_media(
                     file_id=file_id,
-                    message_thread_id=message_thread_id
+                    message_thread_id=message_thread_id,
+                    allow_paid_broadcast=allow_paid_broadcast
                 )
             else:
                 if caption is None:
@@ -4707,7 +4860,8 @@ class Message(Object, Update):
                     parse_mode=parse_mode,
                     caption_entities=caption_entities,
                     has_spoiler=has_spoiler,
-                    message_thread_id=message_thread_id
+                    message_thread_id=message_thread_id,
+                    allow_paid_broadcast=allow_paid_broadcast
                 )
         else:
             raise ValueError("Can't copy this message")
