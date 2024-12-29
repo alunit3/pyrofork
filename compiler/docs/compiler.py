@@ -165,6 +165,7 @@ def pyrogram_api():
         messages="""
         Messages
             send_message
+            forward_media_group
             forward_messages
             copy_message
             copy_media_group
@@ -392,6 +393,12 @@ def pyrogram_api():
             get_bot_info
             set_bot_info
             get_collectible_item_info
+            get_available_gifts
+            get_user_gifts
+            sell_gift
+            send_gift
+            toggle_gift_is_saved
+            get_owned_bots
         """,
         business="""
         Telegram Business
@@ -506,6 +513,7 @@ def pyrogram_api():
             Audio
             AvailableEffect
             Document
+            AlternativeVideo
             Animation
             Video
             Voice
@@ -575,6 +583,8 @@ def pyrogram_api():
             ExtendedMediaPreview
             GiftCode
             GiftedPremium
+            Gift
+            UserGift
             InputStarsTransaction
             Invoice
             LabeledPrice
@@ -773,6 +783,7 @@ def pyrogram_api():
             Message.react
             Message.translate
             Message.wait_for_click
+            UserGift.toggle
         """,
         chat="""
         Chat
