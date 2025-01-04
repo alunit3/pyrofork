@@ -221,6 +221,7 @@ def pyrogram_api():
             get_discussion_replies_count
             get_custom_emoji_stickers
             translate_message_text
+            start_bot
         """,
         chats="""
         Chats
@@ -365,6 +366,8 @@ def pyrogram_api():
             send_payment_form
             send_star_gift
             show_star_gift
+            transfer_star_gift
+            upgrade_star_gift
         """,
         password="""
         Password
@@ -562,6 +565,7 @@ def pyrogram_api():
             ScreenshotTaken
             Wallpaper
             WallpaperSettings
+            StarGiftAttribute
         """,
         stories="""
         Stories
