@@ -23,30 +23,31 @@ from typing import Union, List, Optional
 
 import pyrogram
 from pyrogram import types, utils, raw, enums
+from pyrogram.errors import FloodWait
 
 
 class CopyMediaGroup:
     async def copy_media_group(
-        self: "pyrogram.Client",
-        chat_id: Union[int, str],
-        from_chat_id: Union[int, str],
-        message_id: int,
-        captions: Union[List[str], str] = None,
-        has_spoilers: Union[List[bool], bool] = None,
-        disable_notification: bool = None,
-        message_thread_id: int = None,
-        reply_to_message_id: int = None,
-        reply_to_chat_id: Union[int, str] = None,
-        reply_to_story_id: int = None,
-        quote_text: str = None,
-        parse_mode: Optional["enums.ParseMode"] = None,
-        quote_entities: List["types.MessageEntity"] = None,
-        quote_offset: int = None,
-        schedule_date: datetime = None,
-        invert_media: bool = None,
-        protect_content: bool = None,
-        max_retries: int = 3,
-        retry_delay: int = 5
+            self: "pyrogram.Client",
+            chat_id: Union[int, str],
+            from_chat_id: Union[int, str],
+            message_id: int,
+            captions: Union[List[str], str] = None,
+            has_spoilers: Union[List[bool], bool] = None,
+            disable_notification: bool = None,
+            message_thread_id: int = None,
+            reply_to_message_id: int = None,
+            reply_to_chat_id: Union[int, str] = None,
+            reply_to_story_id: int = None,
+            quote_text: str = None,
+            parse_mode: Optional["enums.ParseMode"] = None,
+            quote_entities: List["types.MessageEntity"] = None,
+            quote_offset: int = None,
+            schedule_date: datetime = None,
+            invert_media: bool = None,
+            protect_content: bool = None,
+            max_retries: int = 3,
+            retry_delay: int = 5
     ) -> List["types.Message"]:
         """Copy a media group by providing one of the message ids.
 
@@ -64,7 +65,7 @@ class CopyMediaGroup:
                 For your personal cloud (Saved Messages) you can simply use "me" or "self".
                 For a contact that exists in your Telegram address book you can use his phone number (str).
                 You can also use chat public link in form of *t.me/<username>* (str).
-                
+
             message_id (``int``):
                 Message identifier in the chat specified in *from_chat_id*.
 
@@ -76,6 +77,13 @@ class CopyMediaGroup:
                 If a ``string`` is passed, it becomes a caption only for the first media.
                 If a list of ``string`` passed, each element becomes caption for each media element.
                 You can pass ``None`` in list to keep the original caption (see examples below).
+
+            has_spoilers (``bool`` | List of ``bool``, *optional*):
+                Pass True if the media contains spoilers.
+
+                If a ``bool`` is passed, it applies to all media.
+                If a list of ``bool`` is passed, each element applies to the corresponding media.
+                You can pass ``None`` in the list to keep the original spoiler status.
 
             disable_notification (``bool``, *optional*):
                 Sends the message silently.
@@ -136,10 +144,10 @@ class CopyMediaGroup:
                 await app.copy_media_group(to_chat, from_chat, 123,
                     captions=["caption 1", None, ""])
         """
-        quote_text, quote_entities = (await utils.parse_text_entities(self, quote_text, parse_mode, quote_entities)).values()
+        quote_text, quote_entities = (
+            await utils.parse_text_entities(self, quote_text, parse_mode, quote_entities)).values()
 
         media_group = await self.get_media_group(from_chat_id, message_id)
-        print(f"Number of messages in the original media group: {len(media_group)}")
         multi_media = []
 
         for i, message in enumerate(media_group):
@@ -159,7 +167,7 @@ class CopyMediaGroup:
                 has_spoiler=(
                     has_spoilers[i]
                     if isinstance(has_spoilers, list)
-                    and i < len(has_spoilers)
+                       and i < len(has_spoilers)
                     else (
                         has_spoilers
                         if isinstance(has_spoilers, bool)
@@ -178,7 +186,7 @@ class CopyMediaGroup:
                             captions) is str else "")
                 )
             )
-        print(f"Number of media in the group: {len(multi_media)}")
+
         for attempt in range(max_retries):
             try:
                 r = await self.invoke(
@@ -186,44 +194,40 @@ class CopyMediaGroup:
                         peer=await self.resolve_peer(chat_id),
                         multi_media=multi_media,
                         silent=disable_notification or None,
-                        reply_to=reply_to,
+                        reply_to=utils.get_reply_to(
+                            reply_to_message_id=reply_to_message_id,
+                            message_thread_id=message_thread_id,
+                            reply_to_peer=await self.resolve_peer(reply_to_chat_id) if reply_to_chat_id else None,
+                            reply_to_story_id=reply_to_story_id,
+                            quote_text=quote_text,
+                            quote_entities=quote_entities,
+                            quote_offset=quote_offset,
+                        ),
+                        schedule_date=utils.datetime_to_timestamp(schedule_date),
                         noforwards=protect_content,
-                        schedule_date=utils.datetime_to_timestamp(schedule_date)
+                        invert_media=invert_media
                     ),
                     sleep_threshold=60
                 )
 
-        r = await self.invoke(
-            raw.functions.messages.SendMultiMedia(
-                peer=await self.resolve_peer(chat_id),
-                multi_media=multi_media,
-                silent=disable_notification or None,
-                reply_to=utils.get_reply_to(
-                    reply_to_message_id=reply_to_message_id,
-                    message_thread_id=message_thread_id,
-                    reply_to_peer=await self.resolve_peer(reply_to_chat_id) if reply_to_chat_id else None,
-                    reply_to_story_id=reply_to_story_id,
-                    quote_text=quote_text,
-                    quote_entities=quote_entities,
-                    quote_offset=quote_offset,
-                ),
-                schedule_date=utils.datetime_to_timestamp(schedule_date),
-                noforwards=protect_content,
-                invert_media=invert_media
-            ),
-            sleep_threshold=60
-        )
-
-        return await utils.parse_messages(
-            self,
-            raw.types.messages.Messages(
-                messages=[m.message for m in filter(
-                    lambda u: isinstance(u, (raw.types.UpdateNewMessage,
-                                             raw.types.UpdateNewChannelMessage,
-                                             raw.types.UpdateNewScheduledMessage)),
-                    r.updates
-                )],
-                users=r.users,
-                chats=r.chats
-            )
-        )
+                return await utils.parse_messages(
+                    self,
+                    raw.types.messages.Messages(
+                        messages=[m.message for m in filter(
+                            lambda u: isinstance(u, (raw.types.UpdateNewMessage,
+                                                     raw.types.UpdateNewChannelMessage,
+                                                     raw.types.UpdateNewScheduledMessage)),
+                            r.updates
+                        )],
+                        users=r.users,
+                        chats=r.chats
+                    )
+                )
+            except FloodWait as e:
+                if attempt == max_retries - 1:
+                    raise
+                await asyncio.sleep(e.value + retry_delay)
+            except Exception as e:
+                if attempt == max_retries - 1:
+                    raise
+                await asyncio.sleep(retry_delay)
