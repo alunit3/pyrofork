@@ -350,24 +350,25 @@ def pyrogram_api():
         Payments
             apply_gift_code
             check_gift_code
-            convert_star_gift
+            convert_gift
             create_invoice_link
             get_payment_form
-            get_star_gifts
             get_stars_transactions
             get_stars_transactions_by_id
-            get_user_star_gifts_count
-            get_user_star_gifts
-            hide_star_gift
+            get_available_gifts
+            get_user_gifts_count
+            get_user_gifts
+            hide_gift
             refund_star_payment
             send_invoice
             send_paid_media
             send_paid_reaction
             send_payment_form
-            send_star_gift
-            show_star_gift
-            transfer_star_gift
-            upgrade_star_gift
+            send_gift
+            show_gift
+            transfer_gift
+            upgrade_gift
+            get_stars_balance
         """,
         password="""
         Password
@@ -396,11 +397,6 @@ def pyrogram_api():
             get_bot_info
             set_bot_info
             get_collectible_item_info
-            get_available_gifts
-            get_user_gifts
-            sell_gift
-            send_gift
-            toggle_gift_is_saved
             get_owned_bots
         """,
         business="""
@@ -506,6 +502,7 @@ def pyrogram_api():
             BotInfo
             ChatColor
             CollectibleItemInfo
+            BotVerification
         """,
         messages_media="""
         Messages & Media
@@ -527,6 +524,8 @@ def pyrogram_api():
             Sticker
             StickerSet
             Game
+            Gift
+            GiftAttribute
             Giveaway
             GiveawayLaunched
             GiveawayResult
@@ -539,7 +538,6 @@ def pyrogram_api():
             PollOption
             Dice
             Reaction
-            StarGift
             VideoChatScheduled
             VideoChatStarted
             VideoChatEnded
@@ -565,7 +563,6 @@ def pyrogram_api():
             ScreenshotTaken
             Wallpaper
             WallpaperSettings
-            StarGiftAttribute
         """,
         stories="""
         Stories
@@ -587,8 +584,6 @@ def pyrogram_api():
             ExtendedMediaPreview
             GiftCode
             GiftedPremium
-            Gift
-            StarGift
             InputStarsTransaction
             Invoice
             LabeledPrice
@@ -786,7 +781,6 @@ def pyrogram_api():
             Message.react
             Message.translate
             Message.wait_for_click
-            UserGift.toggle
         """,
         chat="""
         Chat
@@ -843,6 +837,25 @@ def pyrogram_api():
             Story.reply_video
             Story.reply_video_note
             Story.reply_voice
+        """,
+        folder="""
+        Folder
+            Folder.delete
+            Folder.update
+            Folder.include_chat
+            Folder.exclude_chat
+            Folder.update_color
+            Folder.pin_chat
+            Folder.remove_chat
+            Folder.export_link
+        """,
+        gift="""
+        Gift
+            Gift.show
+            Gift.hide
+            Gift.convert
+            Gift.upgrade
+            Gift.transfer
         """,
         callback_query="""
         Callback Query
