@@ -1,5 +1,4 @@
 #  Pyrofork - Telegram MTProto API Client Library for Python
-#  Copyright (C) 2017-present Dan <https://github.com/delivrance>
 #  Copyright (C) 2022-present Mayuri-Chan <https://github.com/Mayuri-Chan>
 #
 #  This file is part of Pyrofork.
@@ -17,28 +16,31 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with Pyrofork.  If not, see <http://www.gnu.org/licenses/>.
 
-__fork_name__ = "PyroFork"
-__version__ = "2.3.57"
-__license__ = "GNU Lesser General Public License v3.0 (LGPL-3.0)"
-__copyright__ = "Copyright (C) 2022-present Mayuri-Chan <https://github.com/Mayuri-Chan>"
+from typing import List, Union
 
-from concurrent.futures.thread import ThreadPoolExecutor
+import pyrogram
+from pyrogram import raw
 
 
-class StopTransmission(Exception):
-    pass
+class GetSimilarBots:
+    async def get_similar_bots(
+        self: "pyrogram.Client",
+        bot: Union[int, str]
+    ) -> List["pyrogram.types.User"]:
+        """Get a list of bots similar to the target bot.
 
+        .. include:: /_includes/usable-by/users.rst
 
-class StopPropagation(StopAsyncIteration):
-    pass
+        Parameters:
+            bot (``int`` | ``str``):
+                Unique identifier (int) or username (str) of the target bot.
 
-
-class ContinuePropagation(StopAsyncIteration):
-    pass
-
-
-from . import raw, types, filters, handlers, emoji, enums
-from .client import Client
-from .sync import idle, compose
-
-crypto_executor = ThreadPoolExecutor(1, thread_name_prefix="CryptoWorker")
+        Returns:
+            List of :obj:`~pyrogram.types.User`: On success.
+        """
+        peer = await self.resolve_peer(bot)
+        r = await self.invoke(raw.functions.bots.GetBotRecommendations(bot=peer))
+        return pyrogram.types.List([
+            pyrogram.types.User._parse(self, u)
+            for u in r.users
+        ])

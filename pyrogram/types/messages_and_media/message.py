@@ -2759,6 +2759,7 @@ class Message(Object, Update):
         quote_text: str = None,
         quote_entities: List["types.MessageEntity"] = None,
         allow_paid_broadcast: bool = None,
+        message_effect_id: int = None,
         parse_mode: Optional["enums.ParseMode"] = None,
         invert_media: bool = None
     ) -> List["types.Message"]:
@@ -2815,6 +2816,9 @@ class Message(Object, Update):
             allow_paid_broadcast (``bool``, *optional*):
                 Pass True to allow the message to ignore regular broadcast limits for a small fee; for bots
 
+            message_effect_id (``int``, *optional*):
+                Unique identifier of the message effect to be added to the message; for private chats only.                
+
             invert_media (``bool``, *optional*):
                 Inverts the position of the media and caption.
 
@@ -2854,6 +2858,8 @@ class Message(Object, Update):
             reply_to_chat_id=reply_to_chat_id,
             quote_text=quote_text,
             quote_entities=quote_entities,
+            allow_paid_broadcast=allow_paid_broadcast,
+            message_effect_id=message_effect_id,
             invert_media=invert_media
         )
 
@@ -5109,7 +5115,7 @@ class Message(Object, Update):
                 This option is applicable only for users.
 
         Returns:
-            :obj: `~pyrogram.types.MessageReactions`: On success, True is returned.
+            :obj: :obj:`~pyrogram.types.MessageReactions`: On success, True is returned.
 
         Raises:
             RPCError: In case of a Telegram RPC error.
@@ -5433,6 +5439,34 @@ class Message(Object, Update):
 
         reply_message.request = request
         return reply_message
+
+    async def transcribe(self) -> "types.TranscribeAudio":
+        """Bound method *transcribe* of :obj:`~pyrogram.types.Message`.
+
+        Use as a shortcut for:
+        
+        .. code-block:: python
+        
+            await client.transcribe_audio(
+                chat_id=message.chat.id,
+                message_id=message.id
+                )
+        
+        Example:
+            .. code-block:: python
+            
+            await message.transcribe()
+        
+        Returns:
+            :obj:`~pyrogram.types.TranscribeAudio`: On success.
+        
+        Raises:
+            RPCError: In case of a Telegram RPC error.
+        """
+        return await self._client.transcribe_audio(
+            chat_id=self.chat.id,
+            message_id=self.id
+        )
 
     async def translate(
         self,
